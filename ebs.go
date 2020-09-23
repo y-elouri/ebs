@@ -23,28 +23,32 @@ type Estimate struct {
 	estimates [Epoch]int
 }
 
-func main() {
+// key: dev, value: total effort for each simulated future
+type Futures =  map[string][]int
 
+func main() {
 	issues, err := ReadCsv("timesheet.csv")
 	if err != nil {
 		panic(err)
 	}
 	
-	release := estimateRelease(issues)
+	release := release(issues)
 	futures := calcFutures(release)
-	totals := calcTotalEffort(futures)
+	totals := devHours(futures)
 	fmt.Println("release: ", release)
 	fmt.Println("futures: ", futures)
 	fmt.Println("totals: ", totals)
+	for _, total := range totals {
+		fmt.Println(shipDate("20 Sep 2020", total))
+	}
 }
 
-func estimateRelease(issues []Issue) []Estimate {
-
+func release(issues []Issue) []Estimate {
 	rand.Seed(time.Now().UnixNano())
 
+	release := []Estimate{}
 	// key: dev, value: velocity history for last 6 months
 	velocity := map[string][]float64{}
-	release := []Estimate{}
 
 	// estimate possible futures
 	for k, issue := range issues {
@@ -65,9 +69,8 @@ func estimateRelease(issues []Issue) []Estimate {
 	return release
 }
 
-func calcFutures(release []Estimate) map[string][]int {
-
-	futures := map[string][]int{}
+func calcFutures(release []Estimate) Futures {
+	futures := Futures{}
 
 	for i := 0; i < Epoch; i++ {
 		for _, issue := range release {
@@ -81,9 +84,8 @@ func calcFutures(release []Estimate) map[string][]int {
 	return futures
 }
 
-func calcTotalEffort(futures map[string][]int) [Epoch]int {
-
-	totals := [Epoch]int{}
+func devHours(futures Futures) [Epoch]int {
+	hours := [Epoch]int{}
 	
 	for i := 0; i < Epoch; i++ {
 		max := -1
@@ -92,27 +94,36 @@ func calcTotalEffort(futures map[string][]int) [Epoch]int {
 				max = future[i]
 			}
 		}
-		totals[i] = max
+		hours[i] = max
 	}
 
-	return totals
+	return hours
 }
 
 
-func calcShipDate(startDate string) string {
-
+func shipDate(startDate string, effort int) string {
 	const shortForm = "02 Jan 2006"
 	t, _ := time.Parse(shortForm, startDate)
+	days := int(math.Ceil(float64(effort) / 8))
+	for i := 0; i < days; i++ {
+		t = t.AddDate(0, 0, 1)
+		weekday := t.Weekday()
+		if weekday == time.Saturday {
+			t = t.AddDate(0, 0, 2)
+		}
+		if weekday == time.Sunday {
+			t = t.AddDate(0, 0, 1)
+		}
+	}
+	t = t.AddDate(0, 0, days)
 	return t.Format(shortForm)
 }
 
 func calcVelocity(dev string) []float64 {
-
 	return []float64{0.6, 0.7, 0.5, 0.4, 0.7, 0.6}
 }
 
 func ReadCsv(filename string) ([]Issue, error) {
-
     // open CSV file
     f, err := os.Open(filename)
     if err != nil {
