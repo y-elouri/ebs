@@ -10,13 +10,17 @@ import (
 	"time"
 )
 
+// number of simulations
 const Epoch = 5
 
 type Issue struct {
-	id string
-	dev string
-	estimated int64
-	actual int64
+	id, dev string
+	estimated, actual int
+}
+
+type Estimate struct {
+	id, dev string
+	estimates [Epoch]int
 }
 
 func main() {
@@ -27,44 +31,83 @@ func main() {
 	}
 	
 	release := estimateRelease(issues)
-
-	fmt.Println(release)
+	futures := calcFutures(release)
+	totals := calcTotalEffort(futures)
+	fmt.Println("release: ", release)
+	fmt.Println("futures: ", futures)
+	fmt.Println("totals: ", totals)
 }
 
-func estimateRelease(issues []Issue) map[string][Epoch]int {
+func estimateRelease(issues []Issue) []Estimate {
 
 	rand.Seed(time.Now().UnixNano())
 
 	// key: dev, value: velocity history for last 6 months
 	velocity := map[string][]float64{}
-	// key: issue id, value: 100 estimated effort predictions
-	release := map[string][Epoch]int{}
+	release := []Estimate{}
 
-	// calculate velocity history for each dev
-	for _, issue := range issues {
+	// estimate possible futures
+	for k, issue := range issues {
+		// calculate velocity history for each dev
 		if _, ok := velocity[issue.dev]; !ok {
 			velocity[issue.dev] = calcVelocity(issue.dev)
 		}
-	}
-
-	// generate 100 predictions for each issue
-	for _, issue := range issues {
-		i := 0
+		// generate predictions for each issue
 		lenv := len(velocity[issue.dev])
-		estimate := [Epoch]int{}
-		for i < Epoch {
+		release = append(release, Estimate{ issue.id, issue.dev, [Epoch]int{} })
+		for i := 0; i < Epoch; i++ {
 			// pick random velocity for each iteration
 			randv := velocity[issue.dev][rand.Intn(lenv)]
-			estimate[i] = int(math.Round(float64(issue.estimated) / randv))
-			i++
+			release[k].estimates[i] = int(math.Round(float64(issue.estimated) / randv))
 		}
-		release[issue.id] = estimate
 	}
 
 	return release
 }
 
+func calcFutures(release []Estimate) map[string][]int {
+
+	futures := map[string][]int{}
+
+	for i := 0; i < Epoch; i++ {
+		for _, issue := range release {
+			if _, ok := futures[issue.dev]; !ok || len(futures[issue.dev]) == i {
+				futures[issue.dev] = append(futures[issue.dev], 0)
+			}
+			futures[issue.dev][i] += issue.estimates[i]
+		}
+	}
+
+	return futures
+}
+
+func calcTotalEffort(futures map[string][]int) [Epoch]int {
+
+	totals := [Epoch]int{}
+	
+	for i := 0; i < Epoch; i++ {
+		max := -1
+		for _, future := range futures {
+			if future[i] > max {
+				max = future[i]
+			}
+		}
+		totals[i] = max
+	}
+
+	return totals
+}
+
+
+func calcShipDate(startDate string) string {
+
+	const shortForm = "02 Jan 2006"
+	t, _ := time.Parse(shortForm, startDate)
+	return t.Format(shortForm)
+}
+
 func calcVelocity(dev string) []float64 {
+
 	return []float64{0.6, 0.7, 0.5, 0.4, 0.7, 0.6}
 }
 
@@ -86,8 +129,8 @@ func ReadCsv(filename string) ([]Issue, error) {
 	// prepare the data
 	issues := []Issue{}
 	for _, line := range lines[1:] {
-		estimatedHrs, _ := strconv.ParseInt(line[2], 10, 64) 
-		actualHrs, _ := strconv.ParseInt(line[3], 10, 64)
+		estimatedHrs, _ := strconv.Atoi(line[2])
+		actualHrs, _ := strconv.Atoi(line[3])
 		issues = append(issues, Issue{
 			id: line[0],
 			dev: line[1],
