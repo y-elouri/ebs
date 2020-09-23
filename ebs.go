@@ -10,79 +10,68 @@ import (
 	"time"
 )
 
-// number of simulations
+// Epoch is the number of simulations
 const Epoch = 100
 
 type Issue struct {
 	id, dev string
-	estimated, actual int
+	estimate, actual int
 }
 
-type Estimate struct {
-	id, dev string
-	estimates [Epoch]int
-}
+// Release is a representation of all issues and assigned devs in a given release.
+// key: dev, value: array of issue estimates in hours.
+type Release = map[string][]int
 
-// key: dev, value: total effort for each simulated future
-type Futures = map[string][]int
+// Futures is Epoch number of possible futures for each developer.
+// key: dev, value: total effort for each possible future.
+type Futures = map[string][Epoch]int
 
 func main() {
 	issues, err := ReadCsv("timesheet.csv")
 	if err != nil {
 		panic(err)
 	}
-	
-	release := release(issues)
-	futures := calcFutures(release)
-	totals := totalHours(futures)
+	release := prepareRelease(issues)
+	futures := Futures{}
+	for dev, estimates := range release {
+		futures[dev] = predictFutures(dev, estimates)
+	}
+	releaseHrs := releaseHours(futures)
 	shipDates := []string{}
-	for _, hrs := range totals {
-		shipDates = append(shipDates, shipDate("20 Sep 2020", hrs))
+	for i := 0; i < Epoch; i++ {
+		shipDates = append(shipDates, shipDate("20 Sep 2020", releaseHrs[i]))
 	}
 	confidence := confidenceDistrubtion(shipDates)
 	fmt.Println("confidence: ", confidence)
 }
 
-func release(issues []Issue) []Estimate {
-	rand.Seed(time.Now().UnixNano())
-
-	release := []Estimate{}
-	// key: dev, value: velocity history for last 6 months
-	velocity := map[string][]float64{}
-
-	// estimate possible futures
-	for k, issue := range issues {
-		// calculate velocity history for each dev
-		if _, ok := velocity[issue.dev]; !ok {
-			velocity[issue.dev] = calcVelocity(issue.dev)
-		}
-		// generate predictions for each issue
-		lenv := len(velocity[issue.dev])
-		release = append(release, Estimate{ issue.id, issue.dev, [Epoch]int{} })
-		for i := 0; i < Epoch; i++ {
-			// pick random velocity for each iteration
-			randv := velocity[issue.dev][rand.Intn(lenv)]
-			release[k].estimates[i] = int(math.Round(float64(issue.estimated) / randv))
-		}
+// prepareRelease creates a map of each dev with their estimates per assigned issue.
+func prepareRelease(issues []Issue) Release {
+	release := Release{}
+	for _, issue := range issues {
+		release[issue.dev] = append(release[issue.dev], issue.estimate)
 	}
-
 	return release
 }
 
-func calcFutures(release []Estimate) Futures {
-	futures := Futures{}
+// predictFutures predicts Epoch number of actual effort for each estimate in dev hours.
+// It takes the dev id and an array of estimates, each corresponding to a single issue.
+func predictFutures(dev string, issuesEstimates []int) [Epoch]int {
+	rand.Seed(time.Now().UnixNano())
+	totals := [Epoch]int{}
+	velocity := calcVelocity(dev)
+	lenv := len(velocity)
 	for i := 0; i < Epoch; i++ {
-		for _, issue := range release {
-			if _, ok := futures[issue.dev]; !ok || len(futures[issue.dev]) == i {
-				futures[issue.dev] = append(futures[issue.dev], 0)
-			}
-			futures[issue.dev][i] += issue.estimates[i]
+		for _, estimate := range issuesEstimates {
+			randv := velocity[rand.Intn(lenv)]
+			totals[i] += int(math.Round(float64(estimate) / randv))
 		}
 	}
-	return futures
+	return totals
 }
 
-func totalHours(futures Futures) [Epoch]int {
+// releaseHours calculates maximum hours in each possible future for the entire release.
+func releaseHours(futures Futures) [Epoch]int {
 	hours := [Epoch]int{}
 	for i := 0; i < Epoch; i++ {
 		max := -1
@@ -96,19 +85,7 @@ func totalHours(futures Futures) [Epoch]int {
 	return hours
 }
 
-func confidenceDistrubtion(shipDates []string) map[string]float64 {
-	totals := map[string]int{}
-	for _, date := range shipDates {
-		totals[date]++
-	}
-	probablities := map[string]float64{}
-	for date, total := range totals {
-		probablities[date] = float64(total) / Epoch
-	}
-	return probablities
-}
-
-
+// shipDate converts dev hours into a calendar date, excluding weekends.
 func shipDate(startDate string, effort int) string {
 	const shortForm = "02 Jan 2006"
 	t, _ := time.Parse(shortForm, startDate)
@@ -123,8 +100,20 @@ func shipDate(startDate string, effort int) string {
 			t = t.AddDate(0, 0, 1)
 		}
 	}
-	// t = t.AddDate(0, 0, days)
 	return t.Format(shortForm)
+}
+
+// confidenceDistrubtion calculates the probabily of each ship date for the entire release.
+func confidenceDistrubtion(shipDates []string) map[string]float64 {
+	totals := map[string]int{}
+	for _, date := range shipDates {
+		totals[date]++
+	}
+	probablities := map[string]float64{}
+	for date, total := range totals {
+		probablities[date] = float64(total) / Epoch
+	}
+	return probablities
 }
 
 func calcVelocity(dev string) []float64 {
@@ -148,12 +137,12 @@ func ReadCsv(filename string) ([]Issue, error) {
 	// prepare the data
 	issues := []Issue{}
 	for _, line := range lines[1:] {
-		estimatedHrs, _ := strconv.Atoi(line[2])
+		estimateHrs, _ := strconv.Atoi(line[2])
 		actualHrs, _ := strconv.Atoi(line[3])
 		issues = append(issues, Issue{
 			id: line[0],
 			dev: line[1],
-			estimated: estimatedHrs,
+			estimate: estimateHrs,
 			actual: actualHrs})
 	}
 
