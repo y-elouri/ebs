@@ -11,7 +11,7 @@ import (
 )
 
 // number of simulations
-const Epoch = 5
+const Epoch = 100
 
 type Issue struct {
 	id, dev string
@@ -24,7 +24,7 @@ type Estimate struct {
 }
 
 // key: dev, value: total effort for each simulated future
-type Futures =  map[string][]int
+type Futures = map[string][]int
 
 func main() {
 	issues, err := ReadCsv("timesheet.csv")
@@ -34,13 +34,13 @@ func main() {
 	
 	release := release(issues)
 	futures := calcFutures(release)
-	totals := devHours(futures)
-	fmt.Println("release: ", release)
-	fmt.Println("futures: ", futures)
-	fmt.Println("totals: ", totals)
-	for _, total := range totals {
-		fmt.Println(shipDate("20 Sep 2020", total))
+	totals := totalHours(futures)
+	shipDates := []string{}
+	for _, hrs := range totals {
+		shipDates = append(shipDates, shipDate("20 Sep 2020", hrs))
 	}
+	confidence := confidenceDistrubtion(shipDates)
+	fmt.Println("confidence: ", confidence)
 }
 
 func release(issues []Issue) []Estimate {
@@ -71,7 +71,6 @@ func release(issues []Issue) []Estimate {
 
 func calcFutures(release []Estimate) Futures {
 	futures := Futures{}
-
 	for i := 0; i < Epoch; i++ {
 		for _, issue := range release {
 			if _, ok := futures[issue.dev]; !ok || len(futures[issue.dev]) == i {
@@ -80,13 +79,11 @@ func calcFutures(release []Estimate) Futures {
 			futures[issue.dev][i] += issue.estimates[i]
 		}
 	}
-
 	return futures
 }
 
-func devHours(futures Futures) [Epoch]int {
+func totalHours(futures Futures) [Epoch]int {
 	hours := [Epoch]int{}
-	
 	for i := 0; i < Epoch; i++ {
 		max := -1
 		for _, future := range futures {
@@ -96,8 +93,19 @@ func devHours(futures Futures) [Epoch]int {
 		}
 		hours[i] = max
 	}
-
 	return hours
+}
+
+func confidenceDistrubtion(shipDates []string) map[string]float64 {
+	totals := map[string]int{}
+	for _, date := range shipDates {
+		totals[date]++
+	}
+	probablities := map[string]float64{}
+	for date, total := range totals {
+		probablities[date] = float64(total) / Epoch
+	}
+	return probablities
 }
 
 
@@ -115,7 +123,7 @@ func shipDate(startDate string, effort int) string {
 			t = t.AddDate(0, 0, 1)
 		}
 	}
-	t = t.AddDate(0, 0, days)
+	// t = t.AddDate(0, 0, days)
 	return t.Format(shortForm)
 }
 
