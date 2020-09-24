@@ -1,0 +1,18 @@
+{
+    "name": "ebs",
+    "version": "0.0.1",
+    "description": "evidence-based scheduling",
+    "keywords": [
+        "ebs"
+    ],
+    "license": "Unlicense",
+    "author": "Yassine Elouri",
+    "scripts": {
+        "build": "parcel build index.html",
+        "dev": "parcel index.html --open",
+        "start": "npm run build && npm run dev"
+    },
+    "devDependencies": {
+        "parcel-bundler": "^1.12.4"
+    }
+}

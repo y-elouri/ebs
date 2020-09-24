@@ -1,2 +1,5 @@
+ui/node_modules
+ui/dist
+ui/.cache
 todos
 personal.csv
