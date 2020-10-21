@@ -11,28 +11,13 @@ let release = [
     { id:"#10", dev:"c", estimate: 10 },
 ];
 
-const addIssue = (id, dev, estimate) => release.push({id, dev, estimate});
+const addIssue = ({ id, dev, estimate }) => release = [...release, { id, dev, estimate }];
 
-const deleteIssue = (id) => {
-    let arr = [];
-    for (let i = 0; i < release.length; i++) {
-        if (release[i].id !== id) {
-            arr.push(release[i]);
-        }
-    }
-    release = arr;
-};
+const deleteIssue = (id) => release = release.filter(issue => issue.id !== id);
 
-const editIssue = (id, dev, estimate) => {
-    let arr = [];
-    for (let i = 0; i < release.length; i++) {
-        if (release[i].id === id) {
-            arr.push({id, dev, estimate});
-        } else {
-            arr.push(release[i]);
-        }
-    }
-    release = arr
+const editIssue = ({ id, dev, estimate }) => {
+    const i = release.findIndex(issue => issue.id === id);
+    release[i] = { id, dev, estimate };
 };
 
 const issues = () => [...release];
