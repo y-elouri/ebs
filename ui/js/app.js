@@ -1,52 +1,53 @@
-import Tabulator from './vendor/tabulator.min';
-import $ from './vendor/jquery-3.5.1.min';
+import $ from 'jquery';
+import { fromEvent, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
 import * as release from './release';
 
-const deleteIcon = (cell, formatterParams, onRendered) => '<i class="fas fa-trash-alt"></i>';
 
-const deleteRow = (e, cell) => {
-    const id = cell.getRow().getData().id;
-    release.deleteIssue(id);
-    table.getRows().filter(row => {
-        if (row.getData().id === id) {
-            table.deleteRow(id);
-        }
-    });
+const deleteIcon = () => '<i class="fas fa-trash-alt"></i>';
+const addIssueRow = issue => {
+    const { id, dev, estimate } = issue;
+    $('table').append(`
+        <tr>
+            <td>${id}</td>
+            <td>${dev}</td>
+            <td>${estimate}</td>
+            <td>${deleteIcon()}</td>
+        </tr>
+    `);
 };
+release.issues().map(issue => addIssueRow(issue));
 
-const addIssueForm = () => {
-    return `<form>
-                <input type="text" name="id" required>
-                <input type="text" name="dev" required>
-                <input type="number" name="estimate" min="0" required>
-                <button type="submit">+</button>
-            </form>
-    `;
-};
-
-const addIssue = ({ id, dev, estimate }) => {
-    release.addIssue({ id, dev, estimate });
-    table.addData({ id, dev, estimate });
-};
-
-const table = new Tabulator("#release", {
-    data: release.issues(),
-    resizableColumns: false,
-    columns: [
-        { title: "Issue", field: "id", editor:"input" },
-        { title: "Dev", field: "dev" },
-        { title: "Estimate", field: "estimate", editor:"number", editorParams:{ min: 0 } },
-        { formatter: deleteIcon, width: 40, hozAlign: "center", cellClick: deleteRow },
-    ],
-    footerElement: addIssueForm()
+const release$ = new Observable();
+const _release = release$.subscribe(v => {
+    release.addIssue(v);
+    addIssueRow(v);
 });
+let subs = [_release];
 
-$('form').submit((e) => {
+// TODO: try fromEventPattern
+const issue$ = fromEvent($('form'), 'submit');
+const _issue = issue$.subscribe(e => {
     e.preventDefault();
     const data = {};
     $('form').serializeArray().forEach(e => {
         data[e.name] = e.value;
     });
-    addIssue(data);
+    _release.next(data);
     $('form').trigger('reset');
 });
+subs = [...subs, _issue];
+
+const table$ = fromEvent($('table tr td'), 'click')
+    .pipe(map(e => {
+        let x = $.parseHTML(e.currentTarget);
+        return {
+            row: e.currentTarget.cellIndex,
+            column: e.currentTarget.parentNode.sectionRowIndex
+        };
+    }));
+const _table = table$.subscribe(target => {
+    console.log(target);
+});
+subs = [...subs, _table];

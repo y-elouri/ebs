@@ -17,22 +17,57 @@
     <link rel="apple-touch-icon" href="icon.png">
 
     <link rel="stylesheet" href="css/normalize.css">
-    <link rel="stylesheet" href="css/tabulator.min.css">
     <link rel="stylesheet" href="css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/main.css">
 
     <meta name="theme-color" content="#fafafa">
 </head>
 
 <body>
-
     <h2>Plan release</h2>
-    <div id="release" style="width: fit-content;"></div>
 
-    <script src="js/vendor/modernizr-3.11.2.min.js"></script>
-    <script src="js/plugins.js"></script>
+    <table class="release">
+        <tr>
+            <th>Issue</th>
+            <th>Dev</th>
+            <th>Estimate</th>
+            <th></th>
+        </tr>
+    </table>
+
+    <form>
+        <input type="text" name="id" required>
+        <input type="text" name="dev" required>
+        <input type="number" name="estimate" min="0" required>
+        <button type="submit">+</button>
+    </form>
+
+    <script>
+        // Avoid `console` errors in browsers that lack a console.
+        (function () {
+            var method;
+            var noop = function () { };
+            var methods = [
+                'assert', 'clear', 'count', 'debug', 'dir', 'dirxml', 'error',
+                'exception', 'group', 'groupCollapsed', 'groupEnd', 'info', 'log',
+                'markTimeline', 'profile', 'profileEnd', 'table', 'time', 'timeEnd',
+                'timeline', 'timelineEnd', 'timeStamp', 'trace', 'warn'
+            ];
+            var length = methods.length;
+            var console = (window.console = window.console || {});
+
+            while (length--) {
+                method = methods[length];
+
+                // Only stub undefined methods.
+                if (!console[method]) {
+                    console[method] = noop;
+                }
+            }
+        }());
+    </script>
     <script src="js/app.js"></script>
-
 </body>
 
 </html>
