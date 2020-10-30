@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { fromEventPattern } from 'rxjs';
+import { fromEvent } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { addIssue, deleteIssue, issues$ } from './release';
@@ -33,7 +33,9 @@ issues$.subscribe(issue => {
     { id:"#10", dev:"c", estimate: 10 },
 ].forEach(addIssue)
 
-fromEventPattern((handler) => $('#newIssue').on('submit', handler)).pipe(
+
+
+fromEvent($('#newIssue'), 'submit').pipe(
     map(e => {
         e.preventDefault();
         const issue = {};
@@ -47,7 +49,7 @@ fromEventPattern((handler) => $('#newIssue').on('submit', handler)).pipe(
     $('#newIssue').trigger('reset');
 });
 
-const table$ = fromEventPattern((handler) => $('#release tbody').on('click', handler)).pipe(
+const table$ = fromEvent($('#release tbody'), 'click').pipe(
     map(e => {
         return {
             row: $(e.target.closest('td')).parent().index()+1,
