@@ -27,16 +27,19 @@
 <body>
     <h2>Plan release</h2>
 
-    <table class="release">
-        <tr>
-            <th>Issue</th>
-            <th>Dev</th>
-            <th>Estimate</th>
-            <th></th>
-        </tr>
+    <table id="release" class="release">
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Dev</th>
+                <th>Estimate</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody></tbody>
     </table>
 
-    <form>
+    <form id="newIssue">
         <input type="text" name="id" required>
         <input type="text" name="dev" required>
         <input type="number" name="estimate" min="0" required>

@@ -1,19 +1,21 @@
-let release = [
-    { id:"#1", dev:"a", estimate: 3 },
-    { id:"#2", dev:"a", estimate: 4 },
-    { id:"#3", dev:"a", estimate: 8 },
-    { id:"#4", dev:"a", estimate: 12 },
-    { id:"#5", dev:"b", estimate: 5 },
-    { id:"#6", dev:"b", estimate: 7 },
-    { id:"#7", dev:"b", estimate: 4 },
-    { id:"#8", dev:"b", estimate: 2 },
-    { id:"#9", dev:"c", estimate: 16 },
-    { id:"#10", dev:"c", estimate: 10 },
-];
+import { Subject } from "rxjs";
 
-const addIssue = ({ id, dev, estimate }) => release = [...release, { id, dev, estimate }];
+let release = [];
 
-const deleteIssue = (id) => release = release.filter(issue => issue.id !== id);
+const _issues = new Subject();
+const issues$ = _issues.asObservable();
+
+const addIssue = (issue) => {
+    const { id, dev, estimate } = issue;
+    if (isNaN(estimate)) return
+    if (release.find(e => e.id === id)) return // no dup id
+    release = [...release, { id, dev, estimate }];
+    _issues.next({ id, dev, estimate: parseInt(estimate) });
+};
+
+const deleteIssue = (id) => {
+    release = release.filter(issue => issue.id !== id);
+}
 
 const editIssue = ({ id, dev, estimate }) => {
     const i = release.findIndex(issue => issue.id === id);
@@ -22,4 +24,4 @@ const editIssue = ({ id, dev, estimate }) => {
 
 const issues = () => [...release];
 
-export { addIssue, deleteIssue, editIssue, issues };
+export { addIssue, deleteIssue, editIssue, issues, issues$ };

@@ -1,53 +1,65 @@
 import $ from 'jquery';
-import { fromEvent, Observable } from 'rxjs';
+import { fromEventPattern } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import * as release from './release';
+import { addIssue, deleteIssue, issues$ } from './release';
 
 
 const deleteIcon = () => '<i class="fas fa-trash-alt"></i>';
 const addIssueRow = issue => {
     const { id, dev, estimate } = issue;
-    $('table').append(`
-        <tr>
-            <td>${id}</td>
-            <td>${dev}</td>
-            <td>${estimate}</td>
-            <td>${deleteIcon()}</td>
-        </tr>
-    `);
+    let row = $('<tr>');
+    row.append($('<td>').text(id));
+    row.append($('<td>').text(dev));
+    row.append($('<td>').text(estimate));
+    row.append($('<td>').append(deleteIcon()));
+    $('#release tbody').append(row);
 };
-release.issues().map(issue => addIssueRow(issue));
 
-const release$ = new Observable();
-const _release = release$.subscribe(v => {
-    release.addIssue(v);
-    addIssueRow(v);
+issues$.subscribe(issue => {
+    addIssueRow(issue);
 });
-let subs = [_release];
 
-// TODO: try fromEventPattern
-const issue$ = fromEvent($('form'), 'submit');
-const _issue = issue$.subscribe(e => {
-    e.preventDefault();
-    const data = {};
-    $('form').serializeArray().forEach(e => {
-        data[e.name] = e.value;
-    });
-    _release.next(data);
-    $('form').trigger('reset');
+[
+    { id:"#1", dev:"a", estimate: 3 },
+    { id:"#2", dev:"a", estimate: 4 },
+    { id:"#3", dev:"a", estimate: 8 },
+    { id:"#4", dev:"a", estimate: 12 },
+    { id:"#5", dev:"b", estimate: 5 },
+    { id:"#6", dev:"b", estimate: 7 },
+    { id:"#7", dev:"b", estimate: 4 },
+    { id:"#8", dev:"b", estimate: 2 },
+    { id:"#9", dev:"c", estimate: 16 },
+    { id:"#10", dev:"c", estimate: 10 },
+].forEach(addIssue)
+
+fromEventPattern((handler) => $('#newIssue').on('submit', handler)).pipe(
+    map(e => {
+        e.preventDefault();
+        const issue = {};
+        $('#newIssue').serializeArray().forEach(e => {
+            issue[e.name] = e.value;
+        });
+        return issue;
+    })
+).subscribe(issue => {
+    addIssue(issue);
+    $('#newIssue').trigger('reset');
 });
-subs = [...subs, _issue];
 
-const table$ = fromEvent($('table tr td'), 'click')
-    .pipe(map(e => {
-        let x = $.parseHTML(e.currentTarget);
+const table$ = fromEventPattern((handler) => $('#release tbody').on('click', handler)).pipe(
+    map(e => {
         return {
-            row: e.currentTarget.cellIndex,
-            column: e.currentTarget.parentNode.sectionRowIndex
+            row: $(e.target.closest('td')).parent().index()+1,
+            column: $(e.target.closest('td')).index()+1,
+            id: $(e.target.closest('tr')).find(">:first-child").text()
         };
-    }));
-const _table = table$.subscribe(target => {
-    console.log(target);
+    })
+);
+
+table$.subscribe(r => {
+    if (r.column === 4) {
+        deleteIssue(r.id);
+        $(`#release tbody tr:nth-of-type(${r.row})`).remove();
+    }
 });
-subs = [...subs, _table];
