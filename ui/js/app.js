@@ -1,55 +1,44 @@
 import $ from 'jquery';
-import { fromEvent } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { EMPTY, from, fromEvent, merge, of } from 'rxjs';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
-import { addIssue, deleteIssue, issues$ } from './release';
+import { addIssue, deleteIssue, issues } from './release';
 
 
-const deleteIcon = () => '<i class="fas fa-trash-alt"></i>';
 const addIssueRow = issue => {
     const { id, dev, estimate } = issue;
-    let row = $('<tr>');
+    const row = $('<tr>');
+    const deleteIcon = $('<i>').addClass('fas fa-trash-alt');
     row.append($('<td>').text(id));
     row.append($('<td>').text(dev));
     row.append($('<td>').text(estimate));
-    row.append($('<td>').append(deleteIcon()));
+    row.append($('<td>').append(deleteIcon));
     $('#release tbody').append(row);
+    $('#newIssue').trigger('reset');
 };
 
-issues$.subscribe(issue => {
-    addIssueRow(issue);
-});
+merge(
+    from(issues()),
+    fromEvent($('#newIssue'), 'submit').pipe(
+        map(e => {
+            e.preventDefault();
+            const issue = {};
+            $(e.currentTarget).serializeArray().forEach(e => {
+                issue[e.name] = e.value;
+            });
+            return issue;
+        }),
+        switchMap(issue => of(issue).pipe(
+            tap(addIssue),
+            catchError(error => {
+                console.log(error);
+                return EMPTY;
+            })
+        ))
+    )
+).subscribe(addIssueRow);
 
-[
-    { id:"#1", dev:"a", estimate: 3 },
-    { id:"#2", dev:"a", estimate: 4 },
-    { id:"#3", dev:"a", estimate: 8 },
-    { id:"#4", dev:"a", estimate: 12 },
-    { id:"#5", dev:"b", estimate: 5 },
-    { id:"#6", dev:"b", estimate: 7 },
-    { id:"#7", dev:"b", estimate: 4 },
-    { id:"#8", dev:"b", estimate: 2 },
-    { id:"#9", dev:"c", estimate: 16 },
-    { id:"#10", dev:"c", estimate: 10 },
-].forEach(addIssue)
-
-
-
-fromEvent($('#newIssue'), 'submit').pipe(
-    map(e => {
-        e.preventDefault();
-        const issue = {};
-        $('#newIssue').serializeArray().forEach(e => {
-            issue[e.name] = e.value;
-        });
-        return issue;
-    })
-).subscribe(issue => {
-    addIssue(issue);
-    $('#newIssue').trigger('reset');
-});
-
-const table$ = fromEvent($('#release tbody'), 'click').pipe(
+fromEvent($('#release tbody'), 'click').pipe(
     map(e => {
         return {
             row: $(e.target.closest('td')).parent().index()+1,
@@ -57,11 +46,10 @@ const table$ = fromEvent($('#release tbody'), 'click').pipe(
             id: $(e.target.closest('tr')).find(">:first-child").text()
         };
     })
-);
-
-table$.subscribe(r => {
+).subscribe(r => {
     if (r.column === 4) {
         deleteIssue(r.id);
         $(`#release tbody tr:nth-of-type(${r.row})`).remove();
     }
 });
+
