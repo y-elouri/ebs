@@ -9,13 +9,13 @@ let release = [
     { id:"#8", dev:"b", estimate: 2 },
     { id:"#9", dev:"c", estimate: 16 },
     { id:"#10", dev:"c", estimate: 10 },
-]
+];
 
 const addIssue = (issue) => {
     const { id, dev, estimate } = issue;
     if (isNaN(estimate)) return
     if (release.find(e => e.id === id)) throw 'issue already in release';
-    release = [...release, { id, dev, estimate }];
+    release = [...release, { id, dev, estimate: parseInt(estimate) }];
 };
 
 const deleteIssue = (id) => release = release.filter(issue => issue.id !== id);

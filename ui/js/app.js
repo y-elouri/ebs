@@ -1,9 +1,20 @@
 import $ from 'jquery';
+import embed from 'vega-embed';
 import { EMPTY, from, fromEvent, merge, of, partition } from 'rxjs';
 import { catchError, map, pluck, switchMap, tap } from 'rxjs/operators';
 
 import { addIssue, deleteIssue, issues } from './release';
+import { velocity, devShipDate, releaseConfidence, releaseChange } from './vis';
+import * as _ from './utils';
+import { shipDatesConfidence } from './data';
 
+
+
+const releaseConfidenceSpec = releaseConfidence(
+    shipDatesConfidence,
+    ...Object.keys(shipDatesConfidence[0])
+);
+embed('#releaseConfidence', releaseConfidenceSpec);
 
 const addRow = issue => {
     const { id, dev, estimate } = issue;
@@ -49,7 +60,7 @@ delete$.pipe(
     map(e =>  {
         return {
             row: $(e.target.closest('td')).parent().index()+1,
-            id: $(e.target.closest('tr')).find(">:first-child").text()
+            id: $(e.target.closest('tr')).find('>:first-child').text()
         };
     }),
     tap(r => deleteIssue(r.id)),
@@ -61,7 +72,7 @@ edit$.pipe(
         return {
             row: $(e.target.closest('td')).parent().index()+1,
             column: $(e.target.closest('td')).index()+1,
-            id: $(e.target.closest('tr')).find(">:first-child").text()
+            id: $(e.target.closest('tr')).find('>:first-child').text()
         };
     })
 ).subscribe(console.log);

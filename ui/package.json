@@ -17,6 +17,9 @@
     },
     "dependencies": {
         "jquery": "^3.5.1",
-        "rxjs": "^6.6.3"
+        "rxjs": "^6.6.3",
+        "vega": "^5.17.0",
+        "vega-embed": "^6.12.2",
+        "vega-lite": "^4.17.0"
     }
 }
