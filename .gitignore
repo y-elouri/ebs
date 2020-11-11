@@ -1,6 +1,5 @@
 ui/node_modules
 ui/dist
 ui/.cache
-ui/js/data.js
 todos
 personal.csv
