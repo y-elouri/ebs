@@ -1,20 +1,26 @@
 import $ from 'jquery';
 import embed from 'vega-embed';
 import { EMPTY, from, fromEvent, merge, of, partition } from 'rxjs';
-import { catchError, map, pluck, switchMap, tap } from 'rxjs/operators';
+import { catchError, concatMapTo, map, pluck, switchMap, tap } from 'rxjs/operators';
 
 import { addIssue, deleteIssue, issues } from './release';
 import { velocity, devShipDate, releaseConfidence, releaseChange } from './vis';
 import * as _ from './utils';
-import { shipDatesConfidence } from './data';
+import { shipDatesConfidence, timesheet, devFutures } from './data';
 
 
+const chart = (el, spec, opts = { actions: false }) => embed(el, spec, opts);
 
 const releaseConfidenceSpec = releaseConfidence(
     shipDatesConfidence,
     ...Object.keys(shipDatesConfidence[0])
 );
-embed('#releaseConfidence', releaseConfidenceSpec);
+chart('#releaseConfidence', releaseConfidenceSpec);
+
+const velocitySpec = velocity(timesheet.filter(e => e.dev === 'a'), 'estimated', 'actual');
+chart('#velocity', velocitySpec);
+
+chart('#devShipDate', devShipDate(devFutures, 'ship dates', 'dev'));
 
 const addRow = issue => {
     const { id, dev, estimate } = issue;

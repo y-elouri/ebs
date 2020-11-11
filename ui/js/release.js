@@ -11,8 +11,7 @@ let release = [
     { id:"#10", dev:"c", estimate: 10 },
 ];
 
-const addIssue = (issue) => {
-    const { id, dev, estimate } = issue;
+const addIssue = ({ id, dev, estimate }) => {
     if (isNaN(estimate)) return
     if (release.find(e => e.id === id)) throw 'issue already in release';
     release = [...release, { id, dev, estimate: parseInt(estimate) }];

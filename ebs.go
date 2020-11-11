@@ -35,11 +35,12 @@ func main() {
 	futures := Futures{}
 	for dev, estimates := range release {
 		futures[dev] = predictFutures(dev, estimates)
-	}
+    }
+    fmt.Println(devShipDates(futures))
 	releaseHrs := releaseHours(futures)
 	shipDates := []string{}
 	for i := 0; i < Epoch; i++ {
-		shipDates = append(shipDates, shipDate("20 Sep 2020", releaseHrs[i]))
+		shipDates = append(shipDates, shipDateString(shipDate("20 Sep 2020", releaseHrs[i])))
 	}
 	confidence := confidenceDistrubtion(shipDates)
 	fmt.Println("confidence: ", confidence)
@@ -54,7 +55,7 @@ func prepareRelease(issues []Issue) Release {
 	return release
 }
 
-// predictFutures predicts Epoch number of actual effort for each estimate in dev hours.
+// predictFutures predicts Epoch number of total expected effort for each dev in hours.
 // It takes the dev id and an array of estimates, each corresponding to a single issue.
 func predictFutures(dev string, issuesEstimates []int) [Epoch]int {
 	rand.Seed(time.Now().UnixNano())
@@ -68,6 +69,19 @@ func predictFutures(dev string, issuesEstimates []int) [Epoch]int {
 		}
 	}
 	return totals
+}
+
+// devShipDates translates dev hours to ship dates for all predicted futures
+// TODO: ?? return map[string][]time.Time
+// TODO: ?? change flow of calculations
+func devShipDates(futures Futures) map[string][]time.Time {
+    shipDates := map[string][]time.Time{}
+    for i := 0; i < Epoch; i++ {
+        for dev, future := range futures {
+            shipDates[dev] = append(shipDates[dev], shipDate("20 Sep 2020", future[i]))
+        }
+    }
+    return shipDates
 }
 
 // releaseHours calculates maximum hours in each possible future for the entire release.
@@ -86,7 +100,7 @@ func releaseHours(futures Futures) [Epoch]int {
 }
 
 // shipDate converts dev hours into a calendar date, excluding weekends.
-func shipDate(startDate string, effort int) string {
+func shipDate(startDate string, effort int) time.Time {
 	const shortForm = "02 Jan 2006"
 	t, _ := time.Parse(shortForm, startDate)
 	days := int(math.Ceil(float64(effort) / 8))
@@ -100,7 +114,11 @@ func shipDate(startDate string, effort int) string {
 			t = t.AddDate(0, 0, 1)
 		}
 	}
-	return t.Format(shortForm)
+	return t
+}
+
+func shipDateString(t time.Time) string {
+    return t.Format("02 Jan 2006")
 }
 
 // confidenceDistrubtion calculates the probabily of each ship date for the entire release.
