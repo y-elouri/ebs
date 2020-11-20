@@ -1,5 +1,4 @@
 ui/node_modules
-ui/dist
-ui/.cache
+ui/_dist_
 todos
 personal.csv

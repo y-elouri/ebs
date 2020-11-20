@@ -1,25 +1,37 @@
 {
-    "name": "ebs",
-    "version": "0.0.1",
-    "description": "evidence-based scheduling",
-    "keywords": [
-        "ebs"
-    ],
-    "license": "Unlicense",
-    "author": "Yassine Elouri",
-    "scripts": {
-        "build": "parcel build index.html",
-        "dev": "parcel index.html --open",
-        "start": "npm run build && npm run dev"
-    },
-    "devDependencies": {
-        "parcel-bundler": "^1.12.4"
-    },
-    "dependencies": {
-        "jquery": "^3.5.1",
-        "rxjs": "^6.6.3",
-        "vega": "^5.17.0",
-        "vega-embed": "^6.12.2",
-        "vega-lite": "^4.17.0"
-    }
+  "name": "ebs",
+  "version": "0.0.1",
+  "description": "evidence-based scheduling",
+  "keywords": [
+    "ebs"
+  ],
+  "license": "Unlicense",
+  "author": "Yassine Elouri",
+  "scripts": {
+    "start": "snowpack dev",
+    "build": "snowpack build",
+    "test": "web-test-runner \"src/**/*.test.jsx\"",
+    "format": "prettier --write \"src/**/*.{js,jsx}\"",
+    "lint": "prettier --check \"src/**/*.{js,jsx}\""
+  },
+  "dependencies": {
+    "react": "^17.0.0",
+    "react-dom": "^17.0.0",
+    "react-vega": "^7.4.2",
+    "vega": "^5.17.0",
+    "vega-lite": "^4.17.0"
+  },
+  "devDependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.32",
+    "@fortawesome/free-solid-svg-icons": "^5.15.1",
+    "@fortawesome/react-fontawesome": "^0.1.12",
+    "@snowpack/plugin-dotenv": "^2.0.4",
+    "@snowpack/plugin-react-refresh": "^2.3.7",
+    "@snowpack/web-test-runner-plugin": "^0.1.4",
+    "@testing-library/react": "^11.0.0",
+    "@web/test-runner": "^0.9.7",
+    "chai": "^4.2.0",
+    "prettier": "^2.0.5",
+    "snowpack": "^2.17.1"
+  }
 }
